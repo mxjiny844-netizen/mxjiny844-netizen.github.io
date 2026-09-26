@@ -1,0 +1,190 @@
+// 영업 문의(발주/견적/재고/기타) + 부품 문의 작성
+import { useEffect, useState, type FormEvent } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useAuth } from '@/lib/auth'
+import { createTicket, loadMasters, uploadAttachment, type Masters } from '@/lib/api'
+import type { SalesType } from '@/lib/types'
+import { SALES_TYPE_LABEL } from '@/lib/types'
+import { Field } from '@/components/common'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+
+function useMasters() {
+  const [masters, setMasters] = useState<Masters | null>(null)
+  useEffect(() => { loadMasters().then(setMasters) }, [])
+  return masters
+}
+
+export function AttachmentPicker({ files, setFiles, accept }: {
+  files: File[]; setFiles: (f: File[]) => void; accept?: string
+}) {
+  return (
+    <div>
+      <input type="file" multiple accept={accept}
+        onChange={e => setFiles([...files, ...Array.from(e.target.files ?? [])])}
+        className="block w-full text-sm text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700" />
+      {files.length > 0 && (
+        <ul className="mt-2 space-y-1 text-xs text-slate-500">
+          {files.map((f, i) => (
+            <li key={i} className="flex items-center justify-between rounded bg-slate-50 px-2 py-1">
+              <span className="truncate">{f.name}</span>
+              <button type="button" className="ml-2 text-red-500"
+                onClick={() => setFiles(files.filter((_, j) => j !== i))}>삭제</button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+export function NewSalesInquiryPage() {
+  const { session } = useAuth()
+  const nav = useNavigate()
+  const [params] = useSearchParams()
+  const salesType = (params.get('type') ?? 'ETC') as SalesType
+  const masters = useMasters()
+  const [form, setForm] = useState({ product_id: '', quantity: '', title: '', content: '' })
+  const [files, setFiles] = useState<File[]>([])
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  const label = SALES_TYPE_LABEL[salesType] ?? '기타'
+  const products = masters?.products ?? []
+  const company = session?.company
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (!company || !masters) return
+    setBusy(true); setError('')
+    try {
+      const product = products.find(p => p.id === form.product_id)
+      const attachments = []
+      for (const f of files) attachments.push(await uploadAttachment(f))
+      const ticket = await createTicket({
+        kind: 'SALES', sales_type: salesType, company,
+        requester_id: session!.profile.id,
+        product_id: product?.id ?? null, product_name: product?.name,
+        quantity: form.quantity ? Number(form.quantity) : null,
+        title: form.title || `${label} 문의`, content: form.content, attachments,
+      }, masters)
+      nav(`/tickets/${ticket.id}`, { replace: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '접수에 실패했습니다.')
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-lg font-bold text-slate-900">{label} 문의</h2>
+      <div className="rounded-xl bg-slate-100 p-3 text-sm text-slate-600">
+        {company?.name} · {company?.manager} · {company?.phone}
+      </div>
+      <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <Field label="제품">
+          <select className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.product_id} onChange={e => setForm(f => ({ ...f, product_id: e.target.value }))}>
+            <option value="">선택 안 함</option>
+            {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </Field>
+        {salesType !== 'ETC' && (
+          <Field label="수량">
+            <Input type="number" min="0" value={form.quantity}
+              onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} placeholder="예: 10" />
+          </Field>
+        )}
+        <Field label="제목" required>
+          <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required />
+        </Field>
+        <Field label="내용" required>
+          <Textarea rows={5} value={form.content}
+            onChange={e => setForm(f => ({ ...f, content: e.target.value }))} required
+            placeholder="문의 내용을 자세히 적어 주세요." />
+        </Field>
+        <Field label="첨부파일">
+          <AttachmentPicker files={files} setFiles={setFiles} accept="image/*" />
+        </Field>
+        {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
+        <Button type="submit" className="w-full" size="lg" disabled={busy}>
+          {busy ? '접수 중…' : `${label} 문의 접수`}
+        </Button>
+      </form>
+    </div>
+  )
+}
+
+export function NewPartInquiryPage() {
+  const { session } = useAuth()
+  const nav = useNavigate()
+  const masters = useMasters()
+  const [form, setForm] = useState({
+    machine_manufacturer: '', machine_model_name: '', part_name: '',
+    part_no: '', part_qty: '', content: '',
+  })
+  const [files, setFiles] = useState<File[]>([])
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const company = session?.company
+  const machines = masters?.machines ?? []
+  const setF = (k: keyof typeof form) => (e: { target: { value: string } }) =>
+    setForm(f => ({ ...f, [k]: e.target.value }))
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (!company || !masters) return
+    setBusy(true); setError('')
+    try {
+      const attachments = []
+      for (const f of files) attachments.push(await uploadAttachment(f))
+      const ticket = await createTicket({
+        kind: 'PART', company, requester_id: session!.profile.id,
+        machine_manufacturer: form.machine_manufacturer,
+        machine_model_name: form.machine_model_name,
+        part_name: form.part_name, part_no: form.part_no,
+        part_qty: form.part_qty ? Number(form.part_qty) : null,
+        title: `부품 문의 — ${form.part_name}`, content: form.content, attachments,
+      }, masters)
+      nav(`/tickets/${ticket.id}`, { replace: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '접수에 실패했습니다.')
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-lg font-bold text-slate-900">부품 문의</h2>
+      <p className="text-sm text-slate-500">자재팀({masters?.employees.find(e => e.role === 'ROLE_PARTS')?.name ?? '담당자'})이 재고와 가격을 확인해 답변드립니다.</p>
+      <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <Field label="머신 제조사" required>
+          <Input value={form.machine_manufacturer} onChange={setF('machine_manufacturer')} placeholder="예: EIDEN, La Cimbali" required />
+        </Field>
+        <Field label="모델">
+          <select className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.machine_model_name} onChange={setF('machine_model_name')}>
+            <option value="">직접 입력 / 모름</option>
+            {machines.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+          </select>
+        </Field>
+        <Field label="부품명" required><Input value={form.part_name} onChange={setF('part_name')} required /></Field>
+        <Field label="부품번호"><Input value={form.part_no} onChange={setF('part_no')} placeholder="알고 있으면 입력" /></Field>
+        <Field label="수량">
+          <Input type="number" min="1" value={form.part_qty} onChange={setF('part_qty')} />
+        </Field>
+        <Field label="사진">
+          <AttachmentPicker files={files} setFiles={setFiles} accept="image/*" />
+        </Field>
+        <Field label="문의내용" required>
+          <Textarea rows={4} value={form.content} onChange={setF('content')} required />
+        </Field>
+        {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
+        <Button type="submit" className="w-full" size="lg" disabled={busy}>
+          {busy ? '접수 중…' : '부품 문의 접수'}
+        </Button>
+      </form>
+    </div>
+  )
+}

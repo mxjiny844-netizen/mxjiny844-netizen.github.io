@@ -38,7 +38,7 @@ export const seedEmployees: Employee[] = [
   emp(4, '홍준표', '부장', D.SALES_ADMIN, 'ROLE_SALES_ADMIN'),
   emp(5, '조현진', '대리', D.SALES_ADMIN, 'ROLE_SALES_ADMIN'),
   emp(6, '황여진', '대리', D.SALES_ADMIN, 'ROLE_SALES_ADMIN'),
-  emp(7, '김태용', '과장', D.PARTS, 'ROLE_PARTS'),
+  emp(7, '김태영', '과장', D.PARTS, 'ROLE_PARTS'),
   emp(8, '오성민', '차장', D.TECH, 'ROLE_TECH'),
   emp(9, '배준석', '과장', D.TECH, 'ROLE_TECH'),
   emp(10, '신예린', '대리', D.TECH, 'ROLE_TECH'),

@@ -154,31 +154,57 @@ function EmployeesAdmin() {
   useEffect(() => { reload() }, [])
   const empty = { name: '', title: '', department_id: '', role: 'ROLE_SALES', phone: '', email: '', password: 'demo1234' }
   const [form, setForm] = useState(empty)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editUserId, setEditUserId] = useState<string | undefined>(undefined)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
   if (!masters) return <p className="text-sm text-slate-400">불러오는 중…</p>
 
-  async function addEmployee(e: FormEvent) {
+  function startEdit(emp: Employee) {
+    setEditId(emp.id)
+    setEditUserId(emp.user_id)
+    setForm({
+      name: emp.name, title: emp.title ?? '', department_id: emp.department_id,
+      role: emp.role, phone: emp.phone ?? '', email: emp.email ?? '', password: '',
+    })
+    setNotice('')
+  }
+  function cancelEdit() { setEditId(null); setEditUserId(undefined); setForm(empty) }
+
+  async function saveEmployee(e: FormEvent) {
     e.preventDefault()
     setBusy(true); setNotice('')
     try {
-      const emp = await getBackend().insert<Employee>('employees', {
-        name: form.name, title: form.title, department_id: form.department_id,
-        role: form.role, phone: form.phone, email: form.email,
-        status: 'AVAILABLE', active: true,
-      })
-      // Supabase 모드: 로그인 계정(Auth + profiles)까지 함께 생성
-      const uid = await provisionAccount({
-        email: form.email, password: form.password || 'demo1234',
-        name: form.name, role: form.role as Employee['role'], employee_id: emp.id,
-      })
-      if (uid) await getBackend().update('employees', emp.id, { user_id: uid })
-      setNotice(isLocalMode()
-        ? `${form.name} 직원 추가 완료 — 데모 비밀번호(demo1234)로 바로 로그인 가능합니다.`
-        : `${form.name} 직원 계정 생성 완료 — ${form.email} / ${form.password || 'demo1234'} 로 로그인할 수 있습니다.`)
-      setForm(empty)
+      if (editId) {
+        // 수정 모드: 직원 정보 + 연결된 로그인 프로필(이름/권한/연락처) 함께 갱신
+        await getBackend().update('employees', editId, {
+          name: form.name, title: form.title, department_id: form.department_id,
+          role: form.role, phone: form.phone,
+        })
+        if (editUserId) {
+          await getBackend().update('profiles', editUserId, { name: form.name, role: form.role, phone: form.phone })
+        }
+        setNotice(`${form.name} 직원 정보가 수정되었습니다.`)
+        cancelEdit()
+      } else {
+        const emp = await getBackend().insert<Employee>('employees', {
+          name: form.name, title: form.title, department_id: form.department_id,
+          role: form.role, phone: form.phone, email: form.email,
+          status: 'AVAILABLE', active: true,
+        })
+        // Supabase 모드: 로그인 계정(Auth + profiles)까지 함께 생성
+        const uid = await provisionAccount({
+          email: form.email, password: form.password || 'demo1234',
+          name: form.name, role: form.role as Employee['role'], employee_id: emp.id,
+        })
+        if (uid) await getBackend().update('employees', emp.id, { user_id: uid })
+        setNotice(isLocalMode()
+          ? `${form.name} 직원 추가 완료 — 데모 비밀번호(demo1234)로 바로 로그인 가능합니다.`
+          : `${form.name} 직원 계정 생성 완료 — ${form.email} / ${form.password || 'demo1234'} 로 로그인할 수 있습니다.`)
+        setForm(empty)
+      }
     } catch (err) {
-      setNotice(err instanceof Error ? err.message : '추가에 실패했습니다.')
+      setNotice(err instanceof Error ? err.message : '저장에 실패했습니다.')
     }
     setBusy(false); reload()
   }
@@ -218,12 +244,15 @@ function EmployeesAdmin() {
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  <Button size="sm" variant="outline" onClick={async () => {
-                    if (window.confirm(`${e.name} 직원을 비활성화할까요?`)) {
-                      await getBackend().update('employees', e.id, { active: false, deleted_at: new Date().toISOString() })
-                      reload()
-                    }
-                  }}>비활성</Button>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="outline" onClick={() => startEdit(e)}>수정</Button>
+                    <Button size="sm" variant="outline" onClick={async () => {
+                      if (window.confirm(`${e.name} 직원을 비활성화할까요?`)) {
+                        await getBackend().update('employees', e.id, { active: false, deleted_at: new Date().toISOString() })
+                        reload()
+                      }
+                    }}>비활성</Button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -231,8 +260,8 @@ function EmployeesAdmin() {
         </table>
       </Card>
       <Card>
-        <h3 className="font-bold text-slate-900">새 직원 추가</h3>
-        <form onSubmit={addEmployee} className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3">
+        <h3 className="font-bold text-slate-900">{editId ? '직원 정보 수정' : '새 직원 추가'}</h3>
+        <form onSubmit={saveEmployee} className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3">
           <Field label="이름" required><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required /></Field>
           <Field label="직급"><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="과장" /></Field>
           <Field label="부서" required>
@@ -245,13 +274,27 @@ function EmployeesAdmin() {
               {masters.departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
           </Field>
+          <Field label="권한">
+            <select className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={form.role}
+              onChange={e => setForm(f => ({ ...f, role: e.target.value as Employee['role'] }))}>
+              {(Object.keys(ROLE_LABEL) as Employee['role'][]).map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+            </select>
+          </Field>
           <Field label="전화번호"><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></Field>
-          <Field label="이메일" required><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required /></Field>
-          <Field label="초기 비밀번호" required><Input value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required minLength={6} /></Field>
-          <div className="flex items-end"><Button type="submit" disabled={busy}>{busy ? '추가 중…' : '추가'}</Button></div>
+          <Field label={editId ? '이메일 (로그인 아이디, 변경 불가)' : '이메일'} required>
+            <Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required readOnly={!!editId}
+              className={editId ? 'bg-slate-100 text-slate-500' : ''} />
+          </Field>
+          {!editId && (
+            <Field label="초기 비밀번호" required><Input value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required minLength={6} /></Field>
+          )}
+          <div className="flex items-end gap-2">
+            <Button type="submit" disabled={busy}>{busy ? '저장 중…' : editId ? '수정 저장' : '추가'}</Button>
+            {editId && <Button type="button" variant="outline" onClick={cancelEdit}>취소</Button>}
+          </div>
         </form>
-        {notice && <p className="mt-2 text-xs font-medium text-blue-600">{notice}</p>}
-        <p className="mt-2 text-xs text-slate-400">추가하면 로그인 계정(이메일 + 초기 비밀번호)이 함께 생성되며, 직원은 즉시 로그인할 수 있습니다.</p>
+        {notice && <p className="mt-2 text-xs font-medium text-eiden-blue">{notice}</p>}
+        {!editId && <p className="mt-2 text-xs text-slate-400">추가하면 로그인 계정(이메일 + 초기 비밀번호)이 함께 생성되며, 직원은 즉시 로그인할 수 있습니다.</p>}
       </Card>
     </div>
   )

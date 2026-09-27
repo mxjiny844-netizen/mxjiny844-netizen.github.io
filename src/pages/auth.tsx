@@ -67,7 +67,7 @@ export function LoginPage() {
           <ul className="mt-2 space-y-0.5">
             <li>거래처: cafe@ondo.kr (카페 온도)</li>
             <li>영업: sales1@eiden.kr (장원준 부장)</li>
-            <li>자재: parts1@eiden.kr (김태용 과장)</li>
+            <li>자재: parts1@eiden.kr (김태영 과장)</li>
             <li>기술: tech1@eiden.kr (오성민 차장)</li>
             <li>관리자: admin@eiden.kr</li>
           </ul>

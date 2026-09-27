@@ -176,7 +176,7 @@ export function StaffTicketListPage() {
       {!tickets ? <p className="text-sm text-slate-400">불러오는 중…</p>
         : rows.length === 0 ? <EmptyState title="조건에 맞는 문의가 없습니다" /> : (
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-sm">
               <thead className="bg-slate-50 text-left text-xs text-slate-500">
                 <tr>
                   <th className="px-4 py-3">문의번호</th><th className="px-4 py-3">유형</th>
@@ -203,7 +203,7 @@ export function StaffTicketListPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </div>
         )}
     </div>

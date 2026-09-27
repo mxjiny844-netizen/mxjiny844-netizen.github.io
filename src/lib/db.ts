@@ -258,4 +258,5 @@ export function getBackend(): Backend {
 }
 
 export const isLocalMode = () => getBackend().mode === 'local'
-export const roleHome = (role: Role) => (role === 'ROLE_COMPANY' ? '/' : '/staff')
+// 로그인 후 모든 역할이 동일한 홈 화면으로 이동 (직원/관리자는 홈 우측 상단 '관리자 모드'로 전환)
+export const roleHome = (_role: Role) => '/'

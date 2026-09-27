@@ -26,9 +26,11 @@ function Guard({ roles, children }: { roles?: Role[]; children: React.ReactNode 
 }
 
 const STAFF_ROLES: Role[] = ['ROLE_SALES', 'ROLE_SALES_ADMIN', 'ROLE_PARTS', 'ROLE_TECH', 'ROLE_ADMIN']
+const ALL_ROLES: Role[] = ['ROLE_COMPANY', ...STAFF_ROLES]
 
+// 거래처 화면은 로그인한 모든 역할이 볼 수 있음 (직원/관리자는 '관리자 모드' 버튼으로 /staff 전환)
 const M = (node: React.ReactNode, title?: string) => (
-  <Guard roles={['ROLE_COMPANY']}><MobileShell title={title}>{node}</MobileShell></Guard>
+  <Guard roles={ALL_ROLES}><MobileShell title={title}>{node}</MobileShell></Guard>
 )
 const S = (node: React.ReactNode, title?: string, roles: Role[] = STAFF_ROLES) => (
   <Guard roles={roles}><StaffShell title={title}>{node}</StaffShell></Guard>

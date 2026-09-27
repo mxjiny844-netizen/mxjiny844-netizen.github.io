@@ -126,22 +126,22 @@ function CompaniesAdmin() {
       <Card>
         <h3 className="font-bold text-slate-900">승인 대기 ({pending.length})</h3>
         {pending.length === 0 ? <p className="mt-2 text-sm text-slate-400">대기 중인 가입 신청이 없습니다.</p> : (
-          <table className="mt-3 w-full text-sm">
+          <div className="overflow-x-auto"><table className="mt-3 w-full min-w-[560px] text-sm">
             <thead className="text-left text-xs text-slate-500">
               <tr><th className="px-4 py-2">업체명</th><th className="px-4 py-2">사업자번호</th><th className="px-4 py-2">담당자</th><th className="px-4 py-2">지역</th><th className="px-4 py-2">영업담당</th><th className="px-4 py-2">상태</th><th className="px-4 py-2">처리</th></tr>
             </thead>
             <tbody>{pending.map(c => <Row key={c.id} c={c} />)}</tbody>
-          </table>
+          </table></div>
         )}
       </Card>
       <Card>
         <h3 className="font-bold text-slate-900">전체 거래처 ({approved.length})</h3>
-        <table className="mt-3 w-full text-sm">
+        <div className="overflow-x-auto"><table className="mt-3 w-full min-w-[560px] text-sm">
           <thead className="text-left text-xs text-slate-500">
             <tr><th className="px-4 py-2">업체명</th><th className="px-4 py-2">사업자번호</th><th className="px-4 py-2">담당자</th><th className="px-4 py-2">지역</th><th className="px-4 py-2">영업담당</th><th className="px-4 py-2">상태</th><th className="px-4 py-2">처리</th></tr>
           </thead>
           <tbody>{approved.map(c => <Row key={c.id} c={c} />)}</tbody>
-        </table>
+        </table></div>
       </Card>
     </div>
   )
@@ -217,7 +217,7 @@ function EmployeesAdmin() {
     <div className="space-y-5">
       <Card>
         <h3 className="font-bold text-slate-900">직원 목록 ({masters.employees.length}명)</h3>
-        <table className="mt-3 w-full text-sm">
+        <div className="overflow-x-auto"><table className="mt-3 w-full min-w-[560px] text-sm">
           <thead className="text-left text-xs text-slate-500">
             <tr><th className="px-4 py-2">이름</th><th className="px-4 py-2">부서</th><th className="px-4 py-2">권한</th><th className="px-4 py-2">연락처</th><th className="px-4 py-2">상태(자동배정)</th><th className="px-4 py-2" /></tr>
           </thead>
@@ -257,7 +257,7 @@ function EmployeesAdmin() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </Card>
       <Card>
         <h3 className="font-bold text-slate-900">{editId ? '직원 정보 수정' : '새 직원 추가'}</h3>
@@ -323,7 +323,7 @@ function ErrorCodesAdmin() {
       <Card>
         <h3 className="font-bold text-slate-900">오류코드 DB ({items?.length ?? 0}건)</h3>
         {!items?.length ? <EmptyState title="등록된 오류코드가 없습니다" /> : (
-          <table className="mt-3 w-full text-sm">
+          <div className="overflow-x-auto"><table className="mt-3 w-full min-w-[560px] text-sm">
             <thead className="text-left text-xs text-slate-500">
               <tr><th className="px-4 py-2">코드</th><th className="px-4 py-2">머신</th><th className="px-4 py-2">설명</th><th className="px-4 py-2" /></tr>
             </thead>
@@ -354,7 +354,7 @@ function ErrorCodesAdmin() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </Card>
       <Card>
@@ -423,7 +423,7 @@ function SimpleCrud<T extends { id: string }>({ table, title, columns, FormField
           <Button size="sm" onClick={() => { setShowForm(true); setEditId(null); setForm(emptyForm) }}>추가</Button>
         </div>
         {!items?.length ? <p className="mt-2 text-sm text-slate-400">등록된 항목이 없습니다.</p> : (
-          <table className="mt-3 w-full text-sm">
+          <div className="overflow-x-auto"><table className="mt-3 w-full min-w-[560px] text-sm">
             <thead className="text-left text-xs text-slate-500">
               <tr>{columns.map(c => <th key={c.label} className="px-4 py-2">{c.label}</th>)}<th className="px-4 py-2" /></tr>
             </thead>
@@ -440,7 +440,7 @@ function SimpleCrud<T extends { id: string }>({ table, title, columns, FormField
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </Card>
       {showForm && (

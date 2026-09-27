@@ -8,7 +8,7 @@ import type {
   TicketKind, TicketMessage, TicketStatus, MessageKind, Attachment,
 } from './types'
 import type { Session } from './db'
-import { nowIso, OPEN_STATUSES } from './types'
+import { nowIso, OPEN_STATUSES, uid } from './types'
 import { getBackend, type Backend } from './db'
 
 const b = (): Backend => getBackend()
@@ -262,17 +262,29 @@ export async function logSelfResolution(
 export interface SignupInput {
   name: string; business_no: string; manager: string
   phone: string; email: string; region: string; sales_rep_id?: string | null
+  password?: string  // Supabase 모드에서 로그인 계정 생성에 사용 (DB에는 저장하지 않음)
 }
 export async function signupCompany(input: SignupInput, masters: Masters) {
   const dup = masters.companies.find(c => c.business_no && c.business_no === input.business_no)
   if (dup) throw new Error('이미 등록된 사업자번호입니다.')
+  const { password, ...companyFields } = input
   // 비로그인(익명) 사용자도 신청해야 하므로 Supabase에서는 RETURNING 없는 insert 사용 (SELECT 정책과 무관)
   let company: Company
   if (b().mode === 'local') {
-    company = await b().insert<Company>('companies', { ...input, status: 'PENDING' })
+    company = await b().insert<Company>('companies', { ...companyFields, status: 'PENDING' })
   } else {
-    await b().insertOnly('companies', { ...input, status: 'PENDING' })
-    company = { ...input, status: 'PENDING' } as Company
+    // 계정-회사 연결을 위해 id를 클라이언트에서 생성해 함께 저장
+    const companyId = uid()
+    await b().insertOnly('companies', { id: companyId, ...companyFields, status: 'PENDING' })
+    company = { id: companyId, ...companyFields, status: 'PENDING' } as Company
+    // 로그인 계정(Auth 사용자 + 프로필)을 함께 생성 — 승인 후 바로 로그인 가능
+    if (password) {
+      const { provisionAccount } = await import('./provision')
+      await provisionAccount({
+        email: input.email, password, name: input.manager,
+        role: 'ROLE_COMPANY', company_id: companyId,
+      })
+    }
   }
   // 알림/감사 로그는 익명 권한으로 실패할 수 있음 — 실패해도 접수 자체는 성공으로 처리
   try {

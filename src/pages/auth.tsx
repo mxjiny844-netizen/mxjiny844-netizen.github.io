@@ -81,7 +81,7 @@ export function LoginPage() {
 export function SignupPage() {
   const nav = useNavigate()
   const [form, setForm] = useState({
-    name: '', business_no: '', manager: '', phone: '', email: '', region: '', sales_rep_id: '',
+    name: '', business_no: '', manager: '', phone: '', email: '', region: '', sales_rep_id: '', password: '',
   })
   const [masters, setMasters] = useState<Masters | null>(null)
   const [done, setDone] = useState(false)
@@ -113,7 +113,7 @@ export function SignupPage() {
           <p className="text-4xl">✅</p>
           <h2 className="mt-3 text-xl font-bold text-slate-900">가입 신청이 접수되었습니다</h2>
           <p className="mt-2 text-sm text-slate-500">
-            EIDEN 담당자가 승인하면 등록하신 이메일로 로그인할 수 있습니다.
+            EIDEN 담당자가 승인하면 등록하신 이메일과 비밀번호로 로그인할 수 있습니다.
           </p>
           <Button className="mt-6 w-full" onClick={() => nav('/login')}>로그인 화면으로</Button>
         </div>
@@ -131,6 +131,11 @@ export function SignupPage() {
         <Field label="담당자" required><Input value={form.manager} onChange={set('manager')} required /></Field>
         <Field label="전화번호" required><Input value={form.phone} onChange={set('phone')} placeholder="010-0000-0000" required /></Field>
         <Field label="이메일" required><Input type="email" value={form.email} onChange={set('email')} required /></Field>
+        <Field label="비밀번호" required>
+          <Input type="password" value={form.password} onChange={set('password')}
+            placeholder="로그인에 사용할 비밀번호 (6자 이상)" minLength={6} required />
+          <p className="mt-1 text-xs text-slate-400">승인 후 이 이메일과 비밀번호로 로그인합니다.</p>
+        </Field>
         <Field label="지역" required><Input value={form.region} onChange={set('region')} placeholder="예: 서울 강남구" required /></Field>
         <Field label="담당 영업사원">
           <select className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"

@@ -34,7 +34,7 @@ export function AdminPage() {
         {SECTIONS.map(([k, l]) => (
           <NavLink key={k} to={`/staff/admin/${k}`}
             className={cn('rounded-full px-4 py-1.5 text-sm font-medium',
-              section === k ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 border border-slate-200')}>
+              section === k ? 'bg-eiden-navy text-white' : 'bg-white text-slate-600 border border-slate-200')}>
             {l}
           </NavLink>
         ))}

@@ -56,7 +56,7 @@ export function MobileShell({ children, title }: { children: ReactNode; title?: 
     <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-slate-50">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
         <div className="flex items-center gap-2">
-          <Wrench className="h-5 w-5 text-blue-600" />
+          <Wrench className="h-5 w-5 text-eiden-navy" />
           <span className="font-bold text-slate-900">{title ?? 'EIDEN Partner'}</span>
           <ModeTag />
         </div>
@@ -77,7 +77,7 @@ export function MobileShell({ children, title }: { children: ReactNode; title?: 
               <NavLink key={it.to} to={it.to} end={it.to === '/'}
                 className={({ isActive }) => cn(
                   'flex flex-col items-center gap-1 py-2.5 text-xs',
-                  isActive ? 'font-semibold text-blue-600' : 'text-slate-500',
+                  isActive ? 'font-semibold text-eiden-navy' : 'text-slate-500',
                 )}>
                 <it.icon className="h-5 w-5" />
                 {it.label}
@@ -105,7 +105,7 @@ export function StaffShell({ children, title }: { children: ReactNode; title?: s
     <div className="flex min-h-dvh bg-slate-100">
       <aside className="fixed inset-y-0 left-0 z-10 flex w-60 flex-col border-r border-slate-200 bg-white">
         <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
-          <Wrench className="h-6 w-6 text-blue-600" />
+          <Wrench className="h-6 w-6 text-eiden-navy" />
           <div>
             <p className="font-bold leading-tight text-slate-900">EIDEN Partner</p>
             <p className="text-xs text-slate-400">직원용 <ModeTag /></p>
@@ -116,7 +116,7 @@ export function StaffShell({ children, title }: { children: ReactNode; title?: s
             <NavLink key={m.to} to={m.to} end={m.end}
               className={({ isActive }) => cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium',
-                isActive ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50',
+                isActive ? 'bg-eiden-navy/10 text-eiden-navy' : 'text-slate-600 hover:bg-slate-50',
               )}>
               <m.icon className="h-4 w-4" />
               {m.label}

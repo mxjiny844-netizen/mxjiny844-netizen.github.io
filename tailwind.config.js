@@ -48,6 +48,19 @@ module.exports = {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // EIDEN 기업 브랜드 컬러 (Google AI Studio 앱 테마 이식)
+        eiden: {
+          "navy-dark": "#07192F",
+          navy: "#0B2545",
+          "navy-light": "#134074",
+          blue: "#0077B6",
+          "blue-light": "#0096C7",
+          cyan: "#00B4D8",
+          amber: "#D97706",
+          "amber-light": "#F59E0B",
+          green: "#059669",
+          red: "#DC2626",
+        },
       },
       borderRadius: {
         xl: "calc(var(--radius) + 4px)",

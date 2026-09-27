@@ -1,7 +1,6 @@
 // 로그인 / 거래처 가입 신청
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Wrench } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { isLocalMode, roleHome } from '@/lib/db'
 import { signupCompany, loadMasters, type Masters } from '@/lib/api'
@@ -30,15 +29,18 @@ export function LoginPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center bg-slate-50 px-6">
-      <div className="mb-8 text-center">
-        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600">
-          <Wrench className="h-7 w-7 text-white" />
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-slate-50">
+      {/* AI Studio 디자인 이식 — 네이비 브랜드 헤더 */}
+      <div className="bg-gradient-to-b from-eiden-navy-dark to-eiden-navy px-6 pb-7 pt-16">
+        <div className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-eiden-cyan" />
+          <span className="text-[11px] font-bold tracking-wider text-eiden-cyan">EIDEN B2B PARTNER PORTAL</span>
         </div>
-        <h1 className="text-2xl font-bold text-slate-900">EIDEN Partner</h1>
-        <p className="mt-1 text-sm text-slate-500">거래처 문의 · AS 접수 · 진행상태 확인</p>
+        <h1 className="mt-2 text-[22px] font-bold text-white">에이든 파트너 로그인</h1>
+        <p className="mt-1 text-xs text-slate-300">발주·견적·재고·부품·AS 및 오류코드 자가진단 통합 시스템</p>
       </div>
 
+      <div className="flex-1 px-6 py-8">
       <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <Field label="이메일" required>
           <Input type="email" value={email} onChange={e => setEmail(e.target.value)}
@@ -49,12 +51,12 @@ export function LoginPage() {
             placeholder="비밀번호" required />
         </Field>
         {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
-        <Button type="submit" className="w-full" size="lg" disabled={busy}>
+        <Button type="submit" className="w-full bg-eiden-navy hover:bg-eiden-navy-light" size="lg" disabled={busy}>
           {busy ? '로그인 중…' : '로그인'}
         </Button>
         <p className="text-center text-sm text-slate-500">
           처음 이용하시나요?{' '}
-          <Link to="/signup" className="font-semibold text-blue-600">거래처 가입 신청</Link>
+          <Link to="/signup" className="font-semibold text-eiden-blue">거래처 가입 신청</Link>
         </p>
       </form>
 
@@ -71,6 +73,7 @@ export function LoginPage() {
           </ul>
         </div>
       )}
+      </div>
     </div>
   )
 }

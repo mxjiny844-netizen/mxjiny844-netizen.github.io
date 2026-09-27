@@ -45,7 +45,7 @@ export function NewSalesInquiryPage() {
   const [params] = useSearchParams()
   const salesType = (params.get('type') ?? 'ETC') as SalesType
   const masters = useMasters()
-  const [form, setForm] = useState({ product_id: '', quantity: '', title: '', content: '' })
+  const [form, setForm] = useState({ product_text: '', quantity: '', title: '', content: '' })
   const [files, setFiles] = useState<File[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -59,13 +59,16 @@ export function NewSalesInquiryPage() {
     if (!company || !masters) return
     setBusy(true); setError('')
     try {
-      const product = products.find(p => p.id === form.product_id)
+      // 목록에 있는 제품이면 연결하고, 없으면 고객이 직접 입력한 이름 그대로 접수
+      const typed = form.product_text.trim()
+      const product = products.find(p => p.name === typed)
       const attachments = []
       for (const f of files) attachments.push(await uploadAttachment(f))
       const ticket = await createTicket({
         kind: 'SALES', sales_type: salesType, company,
         requester_id: session!.profile.id,
-        product_id: product?.id ?? null, product_name: product?.name,
+        product_id: product?.id ?? null,
+        product_name: product?.name ?? (typed || undefined),
         quantity: form.quantity ? Number(form.quantity) : null,
         title: form.title || `${label} 문의`, content: form.content, attachments,
       }, masters)
@@ -84,11 +87,13 @@ export function NewSalesInquiryPage() {
       </div>
       <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <Field label="제품">
-          <select className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-            value={form.product_id} onChange={e => setForm(f => ({ ...f, product_id: e.target.value }))}>
-            <option value="">선택 안 함</option>
-            {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
+          <Input list="product-list" value={form.product_text}
+            onChange={e => setForm(f => ({ ...f, product_text: e.target.value }))}
+            placeholder="제품명을 직접 입력하거나 목록에서 선택" />
+          <datalist id="product-list">
+            {products.map(p => <option key={p.id} value={p.name} />)}
+          </datalist>
+          <p className="mt-1 text-xs text-slate-400">목록에 없는 제품은 직접 입력하시면 됩니다.</p>
         </Field>
         {salesType !== 'ETC' && (
           <Field label="수량">
@@ -163,11 +168,11 @@ export function NewPartInquiryPage() {
           <Input value={form.machine_manufacturer} onChange={setF('machine_manufacturer')} placeholder="예: EIDEN, La Cimbali" required />
         </Field>
         <Field label="모델">
-          <select className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-            value={form.machine_model_name} onChange={setF('machine_model_name')}>
-            <option value="">직접 입력 / 모름</option>
-            {machines.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
-          </select>
+          <Input list="machine-list" value={form.machine_model_name} onChange={setF('machine_model_name')}
+            placeholder="모델명을 직접 입력하거나 목록에서 선택 (모르면 비워두세요)" />
+          <datalist id="machine-list">
+            {machines.map(m => <option key={m.id} value={m.name} />)}
+          </datalist>
         </Field>
         <Field label="부품명" required><Input value={form.part_name} onChange={setF('part_name')} required /></Field>
         <Field label="부품번호"><Input value={form.part_no} onChange={setF('part_no')} placeholder="알고 있으면 입력" /></Field>

@@ -27,6 +27,8 @@ export interface Backend {
   select<T = any>(table: string): Promise<T[]>
   find<T = any>(table: string, id: string): Promise<T | null>
   insert<T = any>(table: string, row: any): Promise<T>
+  /** 로그성 insert — RETURNING 없이 수행 (SELECT 정책과 무관하게 동작) */
+  insertOnly(table: string, row: any): Promise<void>
   update<T = any>(table: string, id: string, patch: any): Promise<T>
   remove(table: string, id: string): Promise<void>
   getSetting(key: string): Promise<any>
@@ -96,6 +98,9 @@ class LocalBackend implements Backend {
     ;(this.db[table] ??= []).push(full)
     this.save()
     return structuredClone(full)
+  }
+  async insertOnly(table: string, row: any) {
+    await this.insert(table, row)
   }
   async update<T>(table: string, id: string, patch: any): Promise<T> {
     const rows = this.db[table] ?? []
@@ -189,6 +194,10 @@ class SupabaseBackend implements Backend {
     const { data, error } = await this.q(table).insert(row).select().single()
     if (error) throw new Error(error.message)
     return data as T
+  }
+  async insertOnly(table: string, row: any) {
+    const { error } = await this.q(table).insert(row)
+    if (error) throw new Error(error.message)
   }
   async update<T>(table: string, id: string, patch: any): Promise<T> {
     const { data, error } = await this.q(table).update(patch).eq('id', id).select().single()

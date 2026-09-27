@@ -45,14 +45,14 @@ export async function loadMasters(): Promise<Masters> {
 // ---------- 감사/이력/알림 ----------
 async function audit(actor: string, action: string, entity?: string, entity_id?: string, detail?: unknown) {
   const row: Omit<AuditLog, 'id' | 'created_at'> = { actor_name: actor, action, entity, entity_id, detail }
-  await b().insert('audit_logs', row)
+  await b().insertOnly('audit_logs', row)
 }
 async function addHistory(ticket_id: string, actor_name: string, action: HistoryAction, detail?: string, visible = true) {
   const row: Omit<History, 'id' | 'created_at'> = { ticket_id, actor_name, action, detail, visible_to_company: visible }
-  await b().insert('ticket_history', row)
+  await b().insertOnly('ticket_history', row)
 }
 async function notify(n: Omit<AppNotification, 'id' | 'created_at' | 'read'>) {
-  await b().insert('notifications', { ...n, read: false })
+  await b().insertOnly('notifications', { ...n, read: false })
 }
 async function notifyDept(masters: Masters, deptCode: string, n: Omit<AppNotification, 'id' | 'created_at' | 'read' | 'employee_id'>) {
   const dept = masters.departments.find(d => d.code === deptCode)
@@ -170,7 +170,7 @@ export async function autoAssign(ticket: Ticket, masters: Masters): Promise<Empl
 
 async function applyAssign(ticket: Ticket, emp: Employee, method: AssignMethod): Promise<Employee> {
   await b().update('tickets', ticket.id, { assignee_id: emp.id, status: 'CHECKING' })
-  await b().insert<AssignLog>('assignment_logs', { ticket_id: ticket.id, employee_id: emp.id, method })
+  await b().insertOnly('assignment_logs', { ticket_id: ticket.id, employee_id: emp.id, method })
   await addHistory(ticket.id, '시스템', 'ASSIGNED', `${emp.name} ${emp.title ?? ''} 배정 (${method})`)
   await notify({
     employee_id: emp.id, title: '새 티켓이 배정되었습니다',
@@ -254,7 +254,8 @@ export async function logSelfResolution(
     error_code_id: ec?.id ?? null, company_id: company.id,
     machine_category: machineCategory, payload, resolved, ticket_id: ticketId ?? null,
   }
-  return b().insert<SelfResLog>('self_resolution_logs', row)
+  await b().insertOnly('self_resolution_logs', row)
+  return row
 }
 
 // ---------- 거래처 가입 / 승인 ----------

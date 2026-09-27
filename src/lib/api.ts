@@ -266,11 +266,21 @@ export interface SignupInput {
 export async function signupCompany(input: SignupInput, masters: Masters) {
   const dup = masters.companies.find(c => c.business_no && c.business_no === input.business_no)
   if (dup) throw new Error('이미 등록된 사업자번호입니다.')
-  const company = await b().insert<Company>('companies', { ...input, status: 'PENDING' })
-  await notifyDept(masters, 'ADMIN', {
-    title: '거래처 가입 승인 요청', body: input.name, link: '/staff/admin/companies',
-  })
-  await audit(input.name, 'COMPANY_SIGNUP', 'companies', company.id)
+  // 비로그인(익명) 사용자도 신청해야 하므로 Supabase에서는 RETURNING 없는 insert 사용 (SELECT 정책과 무관)
+  let company: Company
+  if (b().mode === 'local') {
+    company = await b().insert<Company>('companies', { ...input, status: 'PENDING' })
+  } else {
+    await b().insertOnly('companies', { ...input, status: 'PENDING' })
+    company = { ...input, status: 'PENDING' } as Company
+  }
+  // 알림/감사 로그는 익명 권한으로 실패할 수 있음 — 실패해도 접수 자체는 성공으로 처리
+  try {
+    await notifyDept(masters, 'ADMIN', {
+      title: '거래처 가입 승인 요청', body: input.name, link: '/staff/admin/companies',
+    })
+    await audit(input.name, 'COMPANY_SIGNUP', 'companies', company.id)
+  } catch { /* 익명 신청 시 로그 테이블 권한 없음 — 무시 */ }
   return company
 }
 export async function approveCompany(company: Company, actor: string) {

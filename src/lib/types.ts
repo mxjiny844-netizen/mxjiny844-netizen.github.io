@@ -121,6 +121,11 @@ export const KIND_LABEL: Record<TicketKind, string> = { SALES: '영업', PART: '
 export const SALES_TYPE_LABEL: Record<SalesType, string> = {
   ORDER: '발주', QUOTE: '견적', STOCK: '재고', ETC: '기타',
 }
+// 문의 접수 시 고객이 선택하는 제품 분류 (품목이 많아 분류만 선택, 상세는 제목/내용에 직접 작성)
+export const PRODUCT_CATEGORIES = [
+  '반자동 커피 머신', '전자동 커피 머신', '그라인더', '스무디 머신',
+  '부품(반자동 커피머신)', '부품(전자동 커피머신)',
+] as const
 export const EMP_STATUS_LABEL: Record<EmpStatus, string> = {
   AVAILABLE: '근무중', BUSY: '처리중', AWAY: '부재중', OFF: '퇴근',
 }

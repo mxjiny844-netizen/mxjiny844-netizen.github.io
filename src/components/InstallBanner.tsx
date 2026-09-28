@@ -17,7 +17,10 @@ function isStandalone() {
 export function InstallBanner() {
   const [visible, setVisible] = useState(false)
   const [canPrompt, setCanPrompt] = useState(false)
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+  const ua = navigator.userAgent
+  const isIOS = /iphone|ipad|ipod/i.test(ua)
+  // 카카오톡·네이버 등 인앱 브라우저에서는 설치가 불가능 → 다른 브라우저로 열기 안내
+  const isInApp = /kakaotalk|naver\(inapp|instagram|line\//i.test(ua)
 
   useEffect(() => {
     if (isStandalone()) return
@@ -49,8 +52,11 @@ export function InstallBanner() {
   }
 
   return (
-    <div className="relative rounded-2xl border border-eiden-navy/20 bg-white p-4 shadow-sm">
-      <button onClick={dismiss} aria-label="닫기"
+    <div
+      onClick={canPrompt ? install : undefined}
+      role={canPrompt ? 'button' : undefined}
+      className={`relative rounded-2xl border border-eiden-navy/20 bg-white p-4 shadow-sm ${canPrompt ? 'cursor-pointer' : ''}`}>
+      <button onClick={(e) => { e.stopPropagation(); dismiss() }} aria-label="닫기"
         className="absolute right-2 top-2 rounded-full p-1 text-slate-400 hover:bg-slate-100">
         <X className="h-4 w-4" />
       </button>
@@ -60,11 +66,15 @@ export function InstallBanner() {
         </span>
         <div className="flex-1">
           <p className="text-sm font-bold text-slate-900">홈 화면에 앱으로 설치하세요</p>
-          {canPrompt ? (
-            <p className="mt-0.5 text-xs text-slate-500">버튼 한 번이면 바탕화면에 앱이 생깁니다.</p>
+          {isInApp ? (
+            <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
+              지금 쓰는 창에서는 설치가 안 됩니다. 우측 하단(또는 상단) <b>⋮ 메뉴</b> → <b>다른 브라우저로 열기</b>로 연 뒤 설치하세요.
+            </p>
+          ) : canPrompt ? (
+            <p className="mt-0.5 text-xs text-slate-500">아래 버튼 한 번이면 바탕화면에 앱이 생깁니다.</p>
           ) : isIOS ? (
             <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
-              하단 <Share className="inline h-3.5 w-3.5 align-[-2px]" /> 공유 버튼 → <b>홈 화면에 추가</b>를 누르세요.
+              Safari 하단 <Share className="inline h-3.5 w-3.5 align-[-2px]" /> 공유 버튼 → <b>홈 화면에 추가</b>를 누르세요.
             </p>
           ) : (
             <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
@@ -74,7 +84,7 @@ export function InstallBanner() {
         </div>
       </div>
       {canPrompt && (
-        <button onClick={install}
+        <button onClick={(e) => { e.stopPropagation(); install() }}
           className="mt-3 w-full rounded-xl bg-eiden-navy py-2.5 text-sm font-bold text-white active:scale-[0.99]">
           앱 설치하기
         </button>

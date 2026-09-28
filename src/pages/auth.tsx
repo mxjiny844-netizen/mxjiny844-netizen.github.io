@@ -83,6 +83,77 @@ export function LoginPage() {
   )
 }
 
+export function ResetPasswordPage() {
+  const nav = useNavigate()
+  const [pw, setPw] = useState('')
+  const [pw2, setPw2] = useState('')
+  const [error, setError] = useState('')
+  const [ready, setReady] = useState<boolean | null>(null)
+  const [done, setDone] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    // 재설정 메일 링크의 토큰으로 세션이 자동 생성되는지 확인
+    import('@/lib/db').then(({ sbClient }) => {
+      const sb = sbClient()
+      if (!sb) { setReady(false); return }
+      sb.auth.getSession().then(({ data }) => setReady(!!data.session))
+    })
+  }, [])
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (pw.length < 6) { setError('비밀번호는 6자 이상이어야 합니다.'); return }
+    if (pw !== pw2) { setError('비밀번호가 서로 다릅니다.'); return }
+    setBusy(true); setError('')
+    try {
+      const { sbClient } = await import('@/lib/db')
+      const sb = sbClient()!
+      const { error } = await sb.auth.updateUser({ password: pw })
+      if (error) throw new Error(error.message)
+      await sb.auth.signOut()
+      setDone(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '변경에 실패했습니다.')
+    } finally { setBusy(false) }
+  }
+
+  return (
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center bg-slate-50 px-6">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h1 className="text-xl font-bold text-slate-900">비밀번호 재설정</h1>
+        {ready === null && <p className="mt-4 text-sm text-slate-400">확인 중…</p>}
+        {ready === false && (
+          <>
+            <p className="mt-3 text-sm text-red-600">링크가 만료되었거나 올바르지 않습니다. 관리자에게 재설정을 다시 요청해 주세요.</p>
+            <Button className="mt-4 w-full" onClick={() => nav('/login')}>로그인 화면으로</Button>
+          </>
+        )}
+        {ready && !done && (
+          <form onSubmit={onSubmit} className="mt-4 space-y-4">
+            <Field label="새 비밀번호" required>
+              <Input type="password" value={pw} onChange={e => setPw(e.target.value)} minLength={6} required placeholder="6자 이상" />
+            </Field>
+            <Field label="새 비밀번호 확인" required>
+              <Input type="password" value={pw2} onChange={e => setPw2(e.target.value)} minLength={6} required />
+            </Field>
+            {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
+            <Button type="submit" className="w-full bg-eiden-navy hover:bg-eiden-navy-light" size="lg" disabled={busy}>
+              {busy ? '변경 중…' : '비밀번호 변경'}
+            </Button>
+          </form>
+        )}
+        {done && (
+          <>
+            <p className="mt-3 text-sm text-emerald-600">비밀번호가 변경되었습니다. 새 비밀번호로 로그인해 주세요.</p>
+            <Button className="mt-4 w-full" onClick={() => nav('/login')}>로그인 화면으로</Button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function SignupPage() {
   const nav = useNavigate()
   const [form, setForm] = useState({

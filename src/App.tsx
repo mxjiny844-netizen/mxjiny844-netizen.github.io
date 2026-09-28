@@ -4,7 +4,7 @@ import { AuthProvider, useAuth } from '@/lib/auth'
 import { roleHome } from '@/lib/db'
 import type { Role } from '@/lib/types'
 import { MobileShell, StaffShell } from '@/components/shells'
-import { LoginPage, SignupPage } from '@/pages/auth'
+import { LoginPage, SignupPage, ResetPasswordPage } from '@/pages/auth'
 import { HomePage, InquiryMenuPage } from '@/pages/company'
 import { NewSalesInquiryPage, NewPartInquiryPage } from '@/pages/inquiry'
 import { AsDiagnosePage, NewAsPage } from '@/pages/as'
@@ -42,6 +42,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* 거래처 (모바일) */}
         <Route path="/" element={M(<HomePage />)} />

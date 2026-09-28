@@ -258,5 +258,10 @@ export function getBackend(): Backend {
 }
 
 export const isLocalMode = () => getBackend().mode === 'local'
+/** Supabase 클라이언트 직접 접근 (비밀번호 재설정 등 Auth 기능용). 로컬 모드면 null */
+export function sbClient(): SupabaseClient | null {
+  const backend = getBackend()
+  return backend.mode === 'supabase' ? (backend as SupabaseBackend).sb : null
+}
 // 로그인 후 모든 역할이 동일한 홈 화면으로 이동 (직원/관리자는 홈 우측 상단 '관리자 모드'로 전환)
 export const roleHome = (_role: Role) => '/'

@@ -329,6 +329,23 @@ export async function ticketBundle(ticketId: string) {
   }
 }
 
+// ---------- 비밀번호 재설정 (이메일 발송) ----------
+export async function sendPasswordReset(email: string) {
+  const { sbClient } = await import('./db')
+  const sb = sbClient()
+  if (!sb) throw new Error('로컬 데모 모드에서는 지원하지 않습니다.')
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: `${location.origin}/reset-password`,
+  })
+  if (error) throw new Error('재설정 메일 발송 실패: ' + error.message)
+}
+
+// ---------- 계정 연결 상태 조회 (관리자용) ----------
+export interface AccountInfo { id: string; company_id?: string | null; employee_id?: string | null }
+export async function listProfiles(): Promise<AccountInfo[]> {
+  return b().select<AccountInfo>('profiles')
+}
+
 // ---------- 알림 ----------
 export async function myNotifications(session: Session): Promise<AppNotification[]> {
   const all = await b().select<AppNotification>('notifications')

@@ -5,7 +5,8 @@ import { getBackend, isLocalMode } from '@/lib/db'
 import { provisionAccount } from '@/lib/provision'
 import { useAuth } from '@/lib/auth'
 import {
-  approveCompany, loadMasters, rejectCompany, type Masters,
+  approveCompany, listProfiles, loadMasters, rejectCompany, sendPasswordReset,
+  type AccountInfo, type Masters,
 } from '@/lib/api'
 import type {
   AssignMethod, Company, EmpStatus, Employee, ErrorCode, EventItem,
@@ -61,12 +62,27 @@ function Card({ children }: { children: React.ReactNode }) {
 function CompaniesAdmin() {
   const { session } = useAuth()
   const [masters, setMasters] = useState<Masters | null>(null)
-  const reload = () => loadMasters().then(setMasters)
+  const [profiles, setProfiles] = useState<AccountInfo[]>([])
+  const reload = () => {
+    loadMasters().then(setMasters)
+    listProfiles().then(setProfiles).catch(() => {})
+  }
   useEffect(() => { reload() }, [])
   if (!masters) return <p className="text-sm text-slate-400">불러오는 중…</p>
   const pending = masters.companies.filter(c => c.status === 'PENDING')
   const approved = masters.companies.filter(c => c.status !== 'PENDING')
   const repName = (id?: string | null) => masters.employees.find(e => e.id === id)?.name ?? '-'
+  // 비밀번호는 보안상 조회 불가 — 재설정 메일로만 변경 가능
+  const hasAccount = (c: Company) => profiles.some(p => p.company_id === c.id)
+  const resetPw = async (email: string, label: string) => {
+    if (!window.confirm(`${label} (${email})\n비밀번호 재설정 메일을 보낼까요?`)) return
+    try {
+      await sendPasswordReset(email)
+      window.alert('재설정 메일을 보냈습니다.\n메일 속 링크를 눌러 새 비밀번호를 설정하면 됩니다.')
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : '발송에 실패했습니다.')
+    }
+  }
 
   const act = async (fn: () => Promise<unknown>) => { await fn(); reload() }
 
@@ -75,6 +91,12 @@ function CompaniesAdmin() {
       <td className="px-4 py-3 font-medium">{c.name}</td>
       <td className="px-4 py-3 text-xs">{c.business_no}</td>
       <td className="px-4 py-3">{c.manager}<br /><span className="text-xs text-slate-400">{c.phone}</span></td>
+      <td className="px-4 py-3 text-xs">
+        {c.email ?? '-'}<br />
+        {hasAccount(c)
+          ? <span className="font-semibold text-emerald-600">계정 발급됨</span>
+          : <span className="font-semibold text-red-500">계정 없음</span>}
+      </td>
       <td className="px-4 py-3 text-xs">{c.region}</td>
       <td className="px-4 py-3">{repName(c.sales_rep_id)}</td>
       <td className="px-4 py-3">
@@ -96,7 +118,7 @@ function CompaniesAdmin() {
         )}
         {c.status !== 'PENDING' && (
           <div className="flex gap-1">
-            {c.status === 'APPROVED' && !isLocalMode() && (
+            {c.status === 'APPROVED' && !isLocalMode() && !hasAccount(c) && (
               <Button size="sm" variant="secondary" onClick={async () => {
                 if (!c.email) { window.alert('거래처에 등록된 이메일이 없습니다.'); return }
                 const pw = window.prompt(`${c.name}의 초기 비밀번호 (6자 이상)`, 'demo1234')
@@ -104,10 +126,14 @@ function CompaniesAdmin() {
                 try {
                   await provisionAccount({ email: c.email, password: pw, name: c.name, role: 'ROLE_COMPANY', company_id: c.id })
                   window.alert(`계정 생성 완료 — ${c.email} / ${pw} 로 로그인할 수 있습니다.`)
+                  reload()
                 } catch (err) {
                   window.alert(err instanceof Error ? err.message : '계정 생성에 실패했습니다.')
                 }
               }}>계정 생성</Button>
+            )}
+            {c.status === 'APPROVED' && !isLocalMode() && hasAccount(c) && c.email && (
+              <Button size="sm" variant="secondary" onClick={() => resetPw(c.email!, c.name)}>비번 재설정</Button>
             )}
             <Button size="sm" variant="outline" onClick={async () => {
               if (window.confirm(`${c.name}을(를) 삭제(숨김)할까요?`)) {
@@ -128,7 +154,7 @@ function CompaniesAdmin() {
         {pending.length === 0 ? <p className="mt-2 text-sm text-slate-400">대기 중인 가입 신청이 없습니다.</p> : (
           <div className="overflow-x-auto"><table className="mt-3 w-full min-w-[560px] text-sm">
             <thead className="text-left text-xs text-slate-500">
-              <tr><th className="px-4 py-2">업체명</th><th className="px-4 py-2">사업자번호</th><th className="px-4 py-2">담당자</th><th className="px-4 py-2">지역</th><th className="px-4 py-2">영업담당</th><th className="px-4 py-2">상태</th><th className="px-4 py-2">처리</th></tr>
+              <tr><th className="px-4 py-2">업체명</th><th className="px-4 py-2">사업자번호</th><th className="px-4 py-2">담당자</th><th className="px-4 py-2">로그인 ID</th><th className="px-4 py-2">지역</th><th className="px-4 py-2">영업담당</th><th className="px-4 py-2">상태</th><th className="px-4 py-2">처리</th></tr>
             </thead>
             <tbody>{pending.map(c => <Row key={c.id} c={c} />)}</tbody>
           </table></div>
@@ -138,7 +164,7 @@ function CompaniesAdmin() {
         <h3 className="font-bold text-slate-900">전체 거래처 ({approved.length})</h3>
         <div className="overflow-x-auto"><table className="mt-3 w-full min-w-[560px] text-sm">
           <thead className="text-left text-xs text-slate-500">
-            <tr><th className="px-4 py-2">업체명</th><th className="px-4 py-2">사업자번호</th><th className="px-4 py-2">담당자</th><th className="px-4 py-2">지역</th><th className="px-4 py-2">영업담당</th><th className="px-4 py-2">상태</th><th className="px-4 py-2">처리</th></tr>
+            <tr><th className="px-4 py-2">업체명</th><th className="px-4 py-2">사업자번호</th><th className="px-4 py-2">담당자</th><th className="px-4 py-2">로그인 ID</th><th className="px-4 py-2">지역</th><th className="px-4 py-2">영업담당</th><th className="px-4 py-2">상태</th><th className="px-4 py-2">처리</th></tr>
           </thead>
           <tbody>{approved.map(c => <Row key={c.id} c={c} />)}</tbody>
         </table></div>
@@ -150,7 +176,11 @@ function CompaniesAdmin() {
 // ---------- 직원 ----------
 function EmployeesAdmin() {
   const [masters, setMasters] = useState<Masters | null>(null)
-  const reload = () => loadMasters().then(setMasters)
+  const [profiles, setProfiles] = useState<AccountInfo[]>([])
+  const reload = () => {
+    loadMasters().then(setMasters)
+    listProfiles().then(setProfiles).catch(() => {})
+  }
   useEffect(() => { reload() }, [])
   const empty = { name: '', title: '', department_id: '', role: 'ROLE_SALES', phone: '', email: '', password: 'demo1234' }
   const [form, setForm] = useState(empty)
@@ -212,6 +242,17 @@ function EmployeesAdmin() {
     await getBackend().update('employees', emp.id, { status })
     reload()
   }
+  const hasAccount = (e: Employee) => !!e.user_id || profiles.some(p => p.employee_id === e.id)
+  const resetPw = async (e: Employee) => {
+    if (!e.email) { window.alert('등록된 이메일이 없습니다.'); return }
+    if (!window.confirm(`${e.name} (${e.email})\n비밀번호 재설정 메일을 보낼까요?`)) return
+    try {
+      await sendPasswordReset(e.email)
+      window.alert('재설정 메일을 보냈습니다.\n메일 속 링크를 눌러 새 비밀번호를 설정하면 됩니다.')
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : '발송에 실패했습니다.')
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -227,7 +268,11 @@ function EmployeesAdmin() {
                 <td className="px-4 py-3 font-medium">{e.name} {e.title}</td>
                 <td className="px-4 py-3">{masters.departments.find(d => d.id === e.department_id)?.name}</td>
                 <td className="px-4 py-3 text-xs">{ROLE_LABEL[e.role]}</td>
-                <td className="px-4 py-3 text-xs">{e.phone}<br />{e.email}</td>
+                <td className="px-4 py-3 text-xs">{e.phone}<br />{e.email}<br />
+                  {hasAccount(e)
+                    ? <span className="font-semibold text-emerald-600">계정 발급됨</span>
+                    : <span className="font-semibold text-red-500">계정 없음</span>}
+                </td>
                 <td className="px-4 py-3">
                   <select value={e.status} onChange={ev => setStatus(e, ev.target.value as EmpStatus)}
                     className={cn('rounded-md border px-2 py-1 text-xs font-semibold',
@@ -244,8 +289,11 @@ function EmployeesAdmin() {
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex gap-1">
+                  <div className="flex flex-wrap gap-1">
                     <Button size="sm" variant="outline" onClick={() => startEdit(e)}>수정</Button>
+                    {hasAccount(e) && !isLocalMode() && (
+                      <Button size="sm" variant="secondary" onClick={() => resetPw(e)}>비번 재설정</Button>
+                    )}
                     <Button size="sm" variant="outline" onClick={async () => {
                       if (window.confirm(`${e.name} 직원을 비활성화할까요?`)) {
                         await getBackend().update('employees', e.id, { active: false, deleted_at: new Date().toISOString() })

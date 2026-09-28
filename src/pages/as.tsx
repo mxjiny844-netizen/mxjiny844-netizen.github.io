@@ -5,12 +5,11 @@ import { Search, CheckCircle2, AlertTriangle } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import {
   createTicket, findErrorCode, loadMasters, logSelfResolution,
-  uploadAttachment, type Masters,
+  type Masters,
 } from '@/lib/api'
 import type { ErrorCode } from '@/lib/types'
 import { MACHINE_CATEGORIES } from '@/lib/types'
 import { Field } from '@/components/common'
-import { AttachmentPicker } from './inquiry'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -160,8 +159,6 @@ export function NewAsPage() {
     machine_model_id: '', serial_no: '',
     error_code: params.get('code') ?? '', symptom: '', urgent: false,
   })
-  const [photos, setPhotos] = useState<File[]>([])
-  const [videos, setVideos] = useState<File[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const machines = masters?.machines ?? []
@@ -174,8 +171,6 @@ export function NewAsPage() {
     setBusy(true); setError('')
     try {
       const model = machines.find(m => m.id === form.machine_model_id)
-      const attachments = []
-      for (const f of [...photos, ...videos]) attachments.push(await uploadAttachment(f))
       const ticket = await createTicket({
         kind: 'AS', company, requester_id: session!.profile.id,
         contact_name: form.contact_name, contact_phone: form.contact_phone,
@@ -186,7 +181,7 @@ export function NewAsPage() {
         serial_no: form.serial_no, error_code: form.error_code,
         symptom: form.symptom, urgent: form.urgent,
         self_resolved_attempt: fromSelf,
-        title: `AS — ${form.store_name}`, attachments,
+        title: `AS — ${form.store_name}`,
       }, masters)
       // 자가진단 실패 전환인 경우 실패 로그 기록
       if (fromSelf) {
@@ -237,8 +232,6 @@ export function NewAsPage() {
           <Textarea rows={4} value={form.symptom} onChange={setF('symptom')} required
             placeholder="언제부터, 어떤 증상인지 자세히 적어 주세요." />
         </Field>
-        <Field label="사진"><AttachmentPicker files={photos} setFiles={setPhotos} accept="image/*" /></Field>
-        <Field label="동영상"><AttachmentPicker files={videos} setFiles={setVideos} accept="video/*" /></Field>
         <label className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
           <input type="checkbox" checked={form.urgent}
             onChange={e => setForm(f => ({ ...f, urgent: e.target.checked }))}

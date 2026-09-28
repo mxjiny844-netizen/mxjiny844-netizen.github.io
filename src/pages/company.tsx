@@ -8,6 +8,7 @@ import {
 import { useAuth } from '@/lib/auth'
 import { listTickets, loadMasters, type Masters } from '@/lib/api'
 import { OPEN_STATUSES, type Ticket } from '@/lib/types'
+import { InstallBanner } from '@/components/InstallBanner'
 
 const MENU = [
   { to: '/inquiry/new?type=ORDER', icon: ShoppingCart, label: '발주 문의', desc: '원두·부자재·장비', color: '#0077B6' },
@@ -58,6 +59,9 @@ export function HomePage() {
           )}
         </div>
       </div>
+
+      {/* 1.5. 앱 설치 안내 (미설치 시에만 표시) */}
+      <InstallBanner />
 
       {/* 2. 오류코드 AI 자가진단 배너 */}
       <Link to="/as/diagnose"

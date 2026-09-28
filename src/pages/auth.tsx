@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth'
 import { isLocalMode, roleHome } from '@/lib/db'
 import { signupCompany, loadMasters, type Masters } from '@/lib/api'
 import { Field } from '@/components/common'
+import { InstallBanner } from '@/components/InstallBanner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DEMO_PASSWORD } from '@/lib/seed'
@@ -59,6 +60,10 @@ export function LoginPage() {
           <Link to="/signup" className="font-semibold text-eiden-blue">거래처 가입 신청</Link>
         </p>
       </form>
+
+      <div className="mt-4">
+        <InstallBanner />
+      </div>
 
       {isLocalMode() && (
         <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-relaxed text-amber-800">

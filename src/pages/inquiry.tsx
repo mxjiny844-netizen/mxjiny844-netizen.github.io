@@ -16,29 +16,6 @@ function useMasters() {
   return masters
 }
 
-export function AttachmentPicker({ files, setFiles, accept }: {
-  files: File[]; setFiles: (f: File[]) => void; accept?: string
-}) {
-  return (
-    <div>
-      <input type="file" multiple accept={accept}
-        onChange={e => setFiles([...files, ...Array.from(e.target.files ?? [])])}
-        className="block w-full text-sm text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700" />
-      {files.length > 0 && (
-        <ul className="mt-2 space-y-1 text-xs text-slate-500">
-          {files.map((f, i) => (
-            <li key={i} className="flex items-center justify-between rounded bg-slate-50 px-2 py-1">
-              <span className="truncate">{f.name}</span>
-              <button type="button" className="ml-2 text-red-500"
-                onClick={() => setFiles(files.filter((_, j) => j !== i))}>삭제</button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )
-}
-
 export function NewSalesInquiryPage() {
   const { session } = useAuth()
   const nav = useNavigate()

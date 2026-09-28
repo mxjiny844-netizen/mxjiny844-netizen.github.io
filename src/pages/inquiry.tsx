@@ -22,7 +22,10 @@ export function NewSalesInquiryPage() {
   const [params] = useSearchParams()
   const salesType = (params.get('type') ?? 'ETC') as SalesType
   const masters = useMasters()
-  const [form, setForm] = useState({ product_cat: '', quantity: '', title: '', content: '' })
+  const [form, setForm] = useState({
+    product_cat: '', quantity: '', title: '', content: '',
+    phone: session?.company?.phone ?? '',
+  })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -37,6 +40,7 @@ export function NewSalesInquiryPage() {
       const ticket = await createTicket({
         kind: 'SALES', sales_type: salesType, company,
         requester_id: session!.profile.id,
+        contact_phone: form.phone || undefined,
         product_id: null,
         product_name: form.product_cat || undefined,
         quantity: form.quantity ? Number(form.quantity) : null,
@@ -80,6 +84,10 @@ export function NewSalesInquiryPage() {
             onChange={e => setForm(f => ({ ...f, content: e.target.value }))} required
             placeholder="커피머신 이름(모델명), 수량, 요청 내역 등을 자세히 적어 주세요." />
         </Field>
+        <Field label="연락처(휴대폰)" required>
+          <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+            placeholder="예: 010-1234-5678" inputMode="tel" required />
+        </Field>
         {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
         <Button type="submit" className="w-full" size="lg" disabled={busy}>
           {busy ? '접수 중…' : `${label} 문의 접수`}
@@ -96,6 +104,7 @@ export function NewPartInquiryPage() {
   const [form, setForm] = useState({
     machine_manufacturer: '', machine_model_name: '', part_name: '',
     part_no: '', part_qty: '', content: '',
+    phone: session?.company?.phone ?? '',
   })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -111,6 +120,7 @@ export function NewPartInquiryPage() {
     try {
       const ticket = await createTicket({
         kind: 'PART', company, requester_id: session!.profile.id,
+        contact_phone: form.phone || undefined,
         machine_manufacturer: form.machine_manufacturer,
         machine_model_name: form.machine_model_name,
         part_name: form.part_name, part_no: form.part_no,
@@ -146,6 +156,10 @@ export function NewPartInquiryPage() {
         </Field>
         <Field label="문의내용" required>
           <Textarea rows={4} value={form.content} onChange={setF('content')} required />
+        </Field>
+        <Field label="연락처(휴대폰)" required>
+          <Input value={form.phone} onChange={setF('phone')}
+            placeholder="예: 010-1234-5678" inputMode="tel" required />
         </Field>
         {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
         <Button type="submit" className="w-full" size="lg" disabled={busy}>

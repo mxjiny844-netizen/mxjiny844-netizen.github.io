@@ -26,14 +26,22 @@ export function AsDiagnosePage() {
   const nav = useNavigate()
   const [category, setCategory] = useState(MACHINE_CATEGORIES[2])
   const [code, setCode] = useState('')
+  const [symptom, setSymptom] = useState('')
   const [result, setResult] = useState<ErrorCode | null | 'NONE'>(null)
   const [done, setDone] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [formError, setFormError] = useState('')
 
   async function onSearch(e: FormEvent) {
     e.preventDefault()
+    setFormError('')
+    if (!code.trim() && !symptom.trim()) {
+      setFormError('오류코드 또는 증상 중 하나는 입력해 주세요.')
+      return
+    }
     setBusy(true)
-    setResult((await findErrorCode(code, category)) ?? 'NONE')
+    // 코드가 있으면 DB에서 찾고, 코드 없이 증상만 있으면 바로 AS 접수 안내로
+    setResult(code.trim() ? ((await findErrorCode(code, category)) ?? 'NONE') : 'NONE')
     setBusy(false)
   }
 
@@ -47,7 +55,7 @@ export function AsDiagnosePage() {
   function onFailed() {
     if (result === 'NONE') return
     // 입력한 내용을 그대로 AS 접수 폼으로 전달 (재입력 방지)
-    nav(`/as/new?code=${encodeURIComponent(code)}&cat=${encodeURIComponent(category)}&self=1`)
+    nav(`/as/new?code=${encodeURIComponent(code)}&cat=${encodeURIComponent(category)}&symptom=${encodeURIComponent(symptom)}&self=1`)
   }
 
   if (done) {
@@ -79,25 +87,33 @@ export function AsDiagnosePage() {
             {MACHINE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </Field>
-        <Field label="오류코드" required>
+        <Field label="오류코드">
           <div className="flex gap-2">
             <Input value={code} onChange={e => setCode(e.target.value)}
-              placeholder="예: 100" inputMode="numeric" required />
+              placeholder="예: 100 (없으면 비워두세요)" inputMode="numeric" />
             <Button type="submit" disabled={busy}><Search className="h-4 w-4" /></Button>
           </div>
         </Field>
+        <Field label="증상 상세">
+          <Textarea rows={3} value={symptom} onChange={e => setSymptom(e.target.value)}
+            placeholder="오류코드가 없거나 더 설명할 내용이 있으면 적어 주세요. 예: 추출 시 소음이 크고 물이 샙니다" />
+        </Field>
+        {formError && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{formError}</p>}
       </form>
 
       {result === 'NONE' && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
           <p className="flex items-center gap-2 font-semibold text-amber-800">
-            <AlertTriangle className="h-5 w-5" /> 등록되지 않은 오류코드입니다
+            <AlertTriangle className="h-5 w-5" />
+            {code.trim() ? '등록되지 않은 오류코드입니다' : '증상만으로는 자가진단이 어렵습니다'}
           </p>
           <p className="mt-1 text-sm text-amber-700">
-            입력하신 코드({code})는 아직 오류코드 DB에 없습니다. AS를 접수해 주시면 기술팀이 확인합니다.
+            {code.trim()
+              ? `입력하신 코드(${code})는 아직 오류코드 DB에 없습니다. AS를 접수해 주시면 기술팀이 확인합니다.`
+              : '적어주신 증상은 기술팀이 직접 확인해야 합니다. 그대로 AS 접수로 넘겨드립니다.'}
           </p>
           <Button className="mt-3 w-full" variant="outline"
-            onClick={() => nav(`/as/new?code=${encodeURIComponent(code)}&cat=${encodeURIComponent(category)}`)}>
+            onClick={() => nav(`/as/new?code=${encodeURIComponent(code)}&cat=${encodeURIComponent(category)}&symptom=${encodeURIComponent(symptom)}`)}>
             이 내용으로 AS 접수하기
           </Button>
         </div>
@@ -157,7 +173,7 @@ export function NewAsPage() {
     contact_name: company?.manager ?? '', contact_phone: company?.phone ?? '',
     region: company?.region ?? '',
     machine_model_id: '', serial_no: '',
-    error_code: params.get('code') ?? '', symptom: '', urgent: false,
+    error_code: params.get('code') ?? '', symptom: params.get('symptom') ?? '', urgent: false,
   })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')

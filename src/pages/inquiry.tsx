@@ -2,7 +2,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
-import { createTicket, loadMasters, uploadAttachment, type Masters } from '@/lib/api'
+import { createTicket, loadMasters, type Masters } from '@/lib/api'
 import type { SalesType } from '@/lib/types'
 import { SALES_TYPE_LABEL, PRODUCT_CATEGORIES } from '@/lib/types'
 import { Field } from '@/components/common'
@@ -46,7 +46,6 @@ export function NewSalesInquiryPage() {
   const salesType = (params.get('type') ?? 'ETC') as SalesType
   const masters = useMasters()
   const [form, setForm] = useState({ product_cat: '', quantity: '', title: '', content: '' })
-  const [files, setFiles] = useState<File[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -58,15 +57,13 @@ export function NewSalesInquiryPage() {
     if (!company || !masters) return
     setBusy(true); setError('')
     try {
-      const attachments = []
-      for (const f of files) attachments.push(await uploadAttachment(f))
       const ticket = await createTicket({
         kind: 'SALES', sales_type: salesType, company,
         requester_id: session!.profile.id,
         product_id: null,
         product_name: form.product_cat || undefined,
         quantity: form.quantity ? Number(form.quantity) : null,
-        title: form.title || `${label} 문의`, content: form.content, attachments,
+        title: form.title || `${label} 문의`, content: form.content,
       }, masters)
       nav(`/tickets/${ticket.id}`, { replace: true })
     } catch (err) {
@@ -106,9 +103,6 @@ export function NewSalesInquiryPage() {
             onChange={e => setForm(f => ({ ...f, content: e.target.value }))} required
             placeholder="커피머신 이름(모델명), 수량, 요청 내역 등을 자세히 적어 주세요." />
         </Field>
-        <Field label="첨부파일">
-          <AttachmentPicker files={files} setFiles={setFiles} accept="image/*" />
-        </Field>
         {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
         <Button type="submit" className="w-full" size="lg" disabled={busy}>
           {busy ? '접수 중…' : `${label} 문의 접수`}
@@ -126,7 +120,6 @@ export function NewPartInquiryPage() {
     machine_manufacturer: '', machine_model_name: '', part_name: '',
     part_no: '', part_qty: '', content: '',
   })
-  const [files, setFiles] = useState<File[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const company = session?.company
@@ -139,15 +132,13 @@ export function NewPartInquiryPage() {
     if (!company || !masters) return
     setBusy(true); setError('')
     try {
-      const attachments = []
-      for (const f of files) attachments.push(await uploadAttachment(f))
       const ticket = await createTicket({
         kind: 'PART', company, requester_id: session!.profile.id,
         machine_manufacturer: form.machine_manufacturer,
         machine_model_name: form.machine_model_name,
         part_name: form.part_name, part_no: form.part_no,
         part_qty: form.part_qty ? Number(form.part_qty) : null,
-        title: `부품 문의 — ${form.part_name}`, content: form.content, attachments,
+        title: `부품 문의 — ${form.part_name}`, content: form.content,
       }, masters)
       nav(`/tickets/${ticket.id}`, { replace: true })
     } catch (err) {
@@ -162,11 +153,11 @@ export function NewPartInquiryPage() {
       <p className="text-sm text-slate-500">자재팀({masters?.employees.find(e => e.role === 'ROLE_PARTS')?.name ?? '담당자'})이 재고와 가격을 확인해 답변드립니다.</p>
       <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <Field label="머신 제조사" required>
-          <Input value={form.machine_manufacturer} onChange={setF('machine_manufacturer')} placeholder="예: EIDEN, La Cimbali" required />
+          <Input value={form.machine_manufacturer} onChange={setF('machine_manufacturer')} placeholder="예: 씨메, 심발리, 제티노, 기타" required />
         </Field>
         <Field label="모델">
           <Input list="machine-list" value={form.machine_model_name} onChange={setF('machine_model_name')}
-            placeholder="모델명을 직접 입력하거나 목록에서 선택 (모르면 비워두세요)" />
+            placeholder="예: 씨메 네오, 제티노 29A블랙" />
           <datalist id="machine-list">
             {machines.map(m => <option key={m.id} value={m.name} />)}
           </datalist>
@@ -175,9 +166,6 @@ export function NewPartInquiryPage() {
         <Field label="부품번호"><Input value={form.part_no} onChange={setF('part_no')} placeholder="알고 있으면 입력" /></Field>
         <Field label="수량">
           <Input type="number" min="1" value={form.part_qty} onChange={setF('part_qty')} />
-        </Field>
-        <Field label="사진">
-          <AttachmentPicker files={files} setFiles={setFiles} accept="image/*" />
         </Field>
         <Field label="문의내용" required>
           <Textarea rows={4} value={form.content} onChange={setF('content')} required />

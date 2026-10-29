@@ -44,7 +44,8 @@ SUPABASE_SERVICE_ROLE_KEY=...     # ⚠️ 절대 외부 유출 금지 (스크�
 
 - 저장소: `mxjiny844-netizen/mxjiny844-netizen.github.io`
 - 브랜치: `main`(소스) + `gh-pages`(빌드 결과물, `dist/.git`에서 force push)
-- 절차:
+- **가장 간단한 방법**: 프로젝트 루트의 `배포.bat`을 더블클릭 → 빌드+배포까지 한 번에 처리됨.
+- 명령줄 절차:
 
 ```bash
 npm run build
